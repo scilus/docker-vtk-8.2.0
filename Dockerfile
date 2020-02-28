@@ -1,6 +1,6 @@
 FROM ubuntu:bionic
 
-ENV MESA=mesa-11.0.7.tar.gz
+ENV MESA=mesa-12.0.0.tar.gz
 ENV VTK=VTK-8.2.0.tar.gz
 
 RUN rm -rf VTK-src
@@ -32,8 +32,9 @@ ENV PYTHON_INCLUDE_DIR=/usr/include/python3.6
 ENV PYTHON_LIBRARY=/usr/lib/python3.6/config-3.6m-x86_64-linux-gnu/libpython3.6.so
 RUN pip3 install -U setuptools
 
-WORKDIR /mesa-src/mesa-11.0.7
+WORKDIR /mesa-src/mesa-12.0.0
 RUN autoreconf -fi
+RUN apt install -y xorg-dev
 RUN ./configure CXXFLAGS="-O2 -g -DDEFAULT_SOFTWARE_DEPTH_BITS=31" CFLAGS="-O2 -g -DDEFAULT_SOFTWARE_DEPTH_BITS=31"--disable-xvmc --disable-dri --with-dri-drivers="" --with-gallium-drivers="swrast" --enable-texture-float --disable-egl --with-egl-platforms="" --enable-gallium-osmesa --enable-gallium-llvm=yes --with-llvm-shared-libs --prefix=/usr/
 RUN make -j 6
 RUN make install
