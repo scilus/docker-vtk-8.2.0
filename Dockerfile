@@ -1,6 +1,6 @@
 FROM ubuntu:bionic
 
-ENV MESA=mesa-12.0.0.tar.gz
+ENV MESA=mesa-19.0.8.tar.gz
 ENV VTK=VTK-8.2.0.tar.gz
 
 RUN rm -rf VTK-src
@@ -32,16 +32,26 @@ ENV PYTHON_INCLUDE_DIR=/usr/include/python3.6
 ENV PYTHON_LIBRARY=/usr/lib/python3.6/config-3.6m-x86_64-linux-gnu/libpython3.6.so
 RUN pip3 install -U setuptools
 
-WORKDIR /mesa-src/mesa-12.0.0
-RUN autoreconf -fi
+WORKDIR /mesa-src/mesa-19.0.8
 RUN apt install -y xorg-dev
-RUN ./configure CXXFLAGS="-O2 -g -DDEFAULT_SOFTWARE_DEPTH_BITS=31" CFLAGS="-O2 -g -DDEFAULT_SOFTWARE_DEPTH_BITS=31"--disable-xvmc --disable-dri --with-dri-drivers="" --with-gallium-drivers="swrast" --enable-texture-float --disable-egl --with-egl-platforms="" --enable-gallium-osmesa --enable-gallium-llvm=yes --with-llvm-shared-libs --prefix=/usr/
-RUN make -j 6
+RUN apt install -y llvm-7 llvm-7-dev llvm-7-runtime
+RUN ./configure --prefix=/usr/ --enable-autotools                   \
+                  --enable-opengl --disable-gles1 --disable-gles2   \
+                  --disable-va --disable-xvmc --disable-vdpau       \
+                  --enable-shared-glapi                             \
+                  --disable-texture-float                           \
+                  --enable-gallium-llvm --enable-llvm-shared-libs   \
+                  --with-gallium-drivers=swrast,swr                 \
+                  --disable-dri --with-dri-drivers=                 \
+                  --disable-egl --with-egl-platforms= --disable-gbm \
+                  --disable-glx                                     \
+                  --disable-osmesa --enable-gallium-osmesa --with-llvm-prefix=/usr/lib/llvm-7
+RUN make -j 10
 RUN make install
 
 WORKDIR /VTK-build
-RUN cmake -DCMAKE_BUILD_TYPE=Release -DVTK_WRAP_PYTHON=ON -DVTK_USE_X=OFF -DBUILD_SHARED_LIBS=ON -DVTK_OPENGL_HAS_OSMESA=ON -DVTK_USE_OFFSCREEN=ON -DOPENGL_gl_LIBRARY=/usr/lib/libglapi.so -DOSMESA_INCLUDE_DIR=/usr/include/ -DOSMESA_LIBRARY=/usr/lib/libOSMesa.so -DCMAKE_INSTALL_PREFIX=/usr/ ../VTK-src/VTK*
-RUN make -j 6
+RUN cmake -DCMAKE_BUILD_TYPE=Release -DVTK_WRAP_PYTHON=ON -DVTK_USE_X=OFF -DBUILD_SHARED_LIBS=ON -DVTK_OPENGL_HAS_OSMESA=ON -DVTK_DEFAULT_RENDER_WINDOW_OFFSCREEN=ON -DOPENGL_gl_LIBRARY=/usr/lib/libglapi.so -DOSMESA_INCLUDE_DIR=/usr/include/ -DOSMESA_LIBRARY=/usr/lib/libOSMesa.so -DCMAKE_INSTALL_PREFIX=/usr/ ../VTK-src/VTK*
+RUN make -j 8
 RUN make install
 
 ENV PYTHONPATH=/usr/lib/x86_64-linux-gnu/python3.6/site-packages/:/usr/bin/
